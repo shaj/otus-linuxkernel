@@ -10,7 +10,7 @@
 #define BUFFER_SIZE (64)
 
 static int idx_param; //
-static char chval_param;
+static char *chval_param;
 static char *str_param;
 
 static int idx_set(const char *val, const struct kernel_param *kp)
@@ -37,15 +37,17 @@ static int idx_set(const char *val, const struct kernel_param *kp)
 
 static int chval_set(const char *val, const struct kernel_param *kp)
 {
+	char new_value[2];
 	if ((*val >= 0x20) && (*val <= 0x7e)) {
-		chval_param = *val;
-		str_param[idx_param] = chval_param;
-		pr_info("Setting up symbol %c at position %d\n", chval_param,
+		new_value[0] = *val;
+		new_value[1] = '\0';
+		str_param[idx_param] = new_value[0];
+		pr_info("Setting up symbol %c at position %d\n", new_value[0],
 			idx_param);
 	} else {
 		pr_err("Symbol 0x%02Xd is unprintable", (int)(*val));
 	}
-	return param_set_charp(val, kp);
+	return param_set_charp((char *)new_value, kp);
 }
 
 static const struct kernel_param_ops idx_ops = {
@@ -55,7 +57,8 @@ static const struct kernel_param_ops idx_ops = {
 
 static const struct kernel_param_ops chval_ops = {
 	.set = chval_set,
-	.get = param_get_byte,
+	.get = param_get_charp,
+	.free = param_free_charp,
 };
 
 // Объявляем параметр с callback
